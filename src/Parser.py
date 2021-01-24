@@ -3,7 +3,7 @@
 Author : Cagri Karaman
 Date : 20212401
 
-Script to parse the measuremtns table from
+Script to parse the measurements table from
  DSI Akim Gözlem Yıllıkları at https://www.dsi.gov.tr/Sayfa/Detay/744
 
 file : PDF file to be parsed
@@ -21,6 +21,7 @@ import pandas as pd
 import re
 import datetime
 import calendar
+import random
 
 
 def get_line_number(phrase, text):
@@ -48,19 +49,14 @@ def extractpage(file, page, year_, extract=True):
             name = name.strip().replace(' ', '_')
             station = name.split('_')[0]
 
-            # get_line_number("Doğu", text)
             try:
-                dec = re.findall(r"\d+", text[get_line_number("YERİ", text)])
+                dec = re.findall(r"\d+", text[get_line_number("Doğu", text)])
             except:
-                assert "Location could not found"
-            if len(dec) == 0:
+                assert len(dec) != 0
+
+            if len(dec) == 0 or len(dec) < 5:
                 dec = re.findall(r"\d+", text[cnt + 1])
 
-            if len(dec) < 6:
-                dec = re.findall(r"\d+", text[cnt + 2])
-            #
-            # if j == 119:
-            #     print("")
             try:
                 dec = [int(i) for i in dec]
                 lon = dec[0] + dec[1] / 60 + dec[2] / 3600
@@ -90,7 +86,6 @@ def extractpage(file, page, year_, extract=True):
             lines = [get_line_number(i, text) for i in line_cnt]
             table = text[lines[0] + 2:lines[1] - 1]
             table = list(filter(None, table))
-            # table = list(filter(' ', table))
 
             temp = []
             for i, line in enumerate(table):
@@ -150,6 +145,11 @@ def extractpage(file, page, year_, extract=True):
 
 if __name__ == '__main__':
     folder = '../data'
-    file = 'dsi_2015.pdf'
-    year = 2015
-    extractpage(os.path.join(folder, file), page=557, year_=year, extract=True)
+    file = 'dsi_2014.pdf'
+    year = 2014
+    extractpage(os.path.join(folder, file), page=558, year_=year, extract=True)
+
+    # Test
+    # pages = [random.randint(0, 1000) for i in range(10)]
+    # for page in pages:
+    #     extractpage(os.path.join(folder, file), page=page, year_=year, extract=True)
