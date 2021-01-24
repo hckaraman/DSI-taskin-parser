@@ -18,7 +18,7 @@ page = 558
 extractpage(os.path.join(folder, file), page=page, year_=year, extract=True)
 ```
 
-![png](images/table.png)
+![png](images/Table.PNG)
 
 #### Dependency
 
