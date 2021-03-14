@@ -31,9 +31,6 @@ ui <-fluidPage(
            tabsetPanel(id="ui_tab",
                        tabPanel("Map",
                                 column(12,shinycssloaders::withSpinner(leaflet::leafletOutput("map", height="600px"),size=2, color="#0080b7"))
-                       ),
-                       tabPanel("Ponds",
-                                column(12,shinycssloaders::withSpinner(DT::dataTableOutput("pond_stat", height="600px"),size=2, color="#0080b7"))
                        )
            ),
     ),
@@ -44,7 +41,7 @@ ui <-fluidPage(
                                                   withSpinner(
                                                     highchartOutput(outputId = "plot", height = "600px")
                                                   ),))),
-                         tabPanel("Table",h4("Click a site"),
+                         tabPanel("Table",
                                   fluidRow(column(12,
                                                   withSpinner(
                                                     DT::dataTableOutput(outputId = "table", height = "600px")
@@ -66,7 +63,8 @@ server <- function(input, output, session){
   river_file <- './data/river.geojson'
   query = "SELECT * FROM Discharge d where d.Station = '03-18';"
   data = dbGetQuery(conn, query)
-
+  data <- rapply(object = data, f = round, classes = "numeric", how = "replace", digits = 6) 
+  
   stations <-  rgdal::readOGR(station_file)
   rivers <-  rgdal::readOGR(river_file)
   mypalette <- colorNumeric( palette="viridis", domain=pond_polygon$id, na.color="transparent")
@@ -88,13 +86,7 @@ server <- function(input, output, session){
       # buildMap(sites=prof_sites, plot_polys=TRUE, au_poly=lake_aus)
       leaflet() %>%
         addProviderTiles("Esri.WorldImagery") %>%
-        setView(lng = 35, lat = 35, zoom = 5) %>%
-          # label = labels,
-          # labelOptions = labelOptions(
-          # style = list("font-weight" = "normal", padding = "3px 8px"),
-          # textsize = "15px",
-          # direction = "auto"))
-        # ) %>%
+        setView(lng = 35, lat = 35, zoom = 6) %>%
         addMarkers(
           data = stations,
           # label = paste0(pond_point$Name),
@@ -106,10 +98,10 @@ server <- function(input, output, session){
             , stations$Station
             , "<br>"
             ,"<b>Elevation : </b>"
-            , stations$Elevation
+            , stations$Elevation ," m"
             , "<br>"
             ,"<b>Basin Area: </b>"
-            , stations$Basin_Area
+            , stations$Basin_Area , "m"
           ),
           # labelOptions = labelOptions(noHide = F),
           layerId = ~Station,
@@ -119,7 +111,7 @@ server <- function(input, output, session){
                       , lng2 = 45
                       , lat2 = 45
         ) %>%
-        addPolylines(data=rivers)
+        addPolylines(data=rivers,weight = 1,opacity = 0.5)
     })
     
     output$plot <- renderHighchart({
@@ -129,12 +121,13 @@ server <- function(input, output, session){
       # query = "SELECT * FROM Discharge d"
       data = dbGetQuery(conn, query)
       data$Dischage <- as.numeric(data$Dischage)
+      data <- rapply(object = data, f = round, classes = "numeric", how = "replace", digits = 6) 
       dfx = xts(data$Dischage, order.by=as.Date(data$Date))
       
       highchart(type = "stock") %>% 
-        hc_title(text = "Monthly Mean Runoff") %>%
+        hc_title(text = paste("Observed discharge at station : ",station)) %>%
         hc_add_series(dfx, yAxis = 0,name = "Observed") %>%
-      hc_add_yAxis(nid = 1L, title = list(text = "Discharge m3/s"), relative = 2) %>%
+      hc_add_yAxis(nid = 1L, title = list(text = "Discharge m3/s"), relative = 4) %>%
         hc_xAxis(
           type = 'datetime') %>%
         hc_legend(enabled = TRUE) %>%
@@ -165,8 +158,6 @@ server <- function(input, output, session){
     )
     
     output$pond_stat <- DT::renderDataTable({
-      
-      
     })
     
   })
