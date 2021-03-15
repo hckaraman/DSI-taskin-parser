@@ -131,3 +131,7 @@ dmypy.json
 .idea/
 
 data/
+
+src/Data.db
+
+src/data.tar.gz
